@@ -199,6 +199,7 @@ default_sanitycheck() {
 	[ -n "$pkguser" ] && spell_error pkguser pkgusers
 	[ -n "$pkggroup" ] && spell_error pkggroup pkggroups
 	[ -n "$subpackage" ] && spell_error subpackage subpackages
+	[ -n "$checkdepend" ] && spell_error checkdepend checkdepends
 
 	check_maintainer || die "Provide a valid RFC822 maintainer address"
 
@@ -1729,11 +1730,12 @@ parse_aports_makedepends() {
 		subpackages=
 		depends=
 		makedepends=
+		checkdepends=
 		. $i
 		dir=${i%/APKBUILD}
 		deps=
 		# filter out conflicts from deps and version info
-		for j in $depends $makedepends; do
+		for j in $depends $makedepends $checkdepends; do
 			case "$j" in
 				!*) continue;;
 			esac
@@ -1806,7 +1808,7 @@ calcdeps() {
 		done
 	else
 		[ -z "$makedepends" ] && makedepends="$makedepends_build $makedepends_host"
-		for i in $1 $depends $makedepends; do
+		for i in $1 $depends $makedepends $checkdepends; do
 			[ "$pkgname" = "${i%%[<>=]*}" ] && continue
 			list_has $i $builddeps && continue
 			subpackages_has ${i%%[<>=]*} || builddeps="$builddeps $i"

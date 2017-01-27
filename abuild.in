@@ -1365,18 +1365,21 @@ create_apks() {
 }
 
 build_abuildrepo() {
-	local d apk _build=build
+	local d apk _build=build _check=check
 	if ! is_function package; then
 		# if package() is missing then build is called from rootpkg
 		_build=true
+	fi
+	if cross_compiling; then
+		_check=true
 	fi
 	if ! apk_up2date || [ -n "$force" ]; then
 		# check early if we have abuild key
 		abuild-sign --installed || return 1
 		logcmd "building $repo/$pkgname-$pkgver-r$pkgrel"
 		sanitycheck && builddeps && clean && fetch && unpack \
-			&& prepare && mkusers && $_build && rootpkg \
-			&& cleanup $CLEANUP \
+			&& prepare && mkusers && $_build && $_check \
+			&& rootpkg && cleanup $CLEANUP \
 			|| return 1
 	fi
 	update_abuildrepo_index
@@ -1415,6 +1418,17 @@ update_abuildrepo_index() {
 		  mv APKINDEX.tar.gz.$$ APKINDEX.tar.gz \
 		) || (rm -f APKINDEX.tar.gz.$$ ; die "Failed to create index")
 	done
+}
+
+# predefined function check
+default_check() {
+	if ! options_has "!check"; then
+		warning "APKBUILD does not run any tests - define a check() function!"
+	fi
+}
+
+check() {
+	default_check
 }
 
 # predefined splitfunc doc
@@ -2147,6 +2161,7 @@ usage() {
 
 		Commands:
 		  build       Compile and install package into \$pkgdir
+		  check       Run any defined tests concerning the package
 		  checksum    Generate checksum to be included in APKBUILD
 		  clean       Remove temp build and install dirs
 		  cleancache  Remove downloaded files from \$SRCDEST
